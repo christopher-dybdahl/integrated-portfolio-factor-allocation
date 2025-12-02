@@ -12,10 +12,15 @@ dependencies = [
     "pandas (>=2.3.3,<3.0.0)",
     "matplotlib (>=3.10.7,<4.0.0)",
     "seaborn (>=0.13.2,<0.14.0)",
-    "statsmodels (>=0.14.5,<0.15.0)"
+    "statsmodels (>=0.14.5,<0.15.0)",
+    "cvxpy (>=1.7.4,<2.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.packages]]
+include = "portfolio_factor_allocation"
+from = "src"
