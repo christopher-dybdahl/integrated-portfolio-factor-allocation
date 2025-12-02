@@ -153,6 +153,7 @@ def factor_adjusted_weights(df, cols, factor_weights, method):
     return weighted_sum
 
 
+# Helper function for TE portfolio
 def build_te_problem(Sigma, w_bench, te_target):
     """
     Build a tracking error constrained long only portfolio problem.
@@ -184,6 +185,7 @@ def build_te_problem(Sigma, w_bench, te_target):
     return prob, w, s_param
 
 
+# Function to create the TE weights for each factor provided
 def te_portfolio_weights(
     df,
     cols,
