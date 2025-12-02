@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 
@@ -107,3 +108,149 @@ def calculate_strategy_returns(
     df_res = pd.DataFrame(results)
     df_res["date"] = unique_dates
     return df_res
+
+
+def calculate_annualized_volatility(r):
+    """Calculates annualized volatility."""
+    if isinstance(r, (pd.DataFrame, pd.Series)):
+        return r.std() * np.sqrt(12)
+    else:
+        return np.std(r, axis=0, ddof=1) * np.sqrt(12)
+
+
+def calculate_sharpe_ratio(r, r_f=0.0):
+    """Calculates annualized Sharpe Ratio."""
+    if isinstance(r, (pd.DataFrame, pd.Series)):
+        excess_ret = (
+            r.sub(r_f, axis=0)
+            if isinstance(r_f, (pd.DataFrame, pd.Series))
+            else r - r_f
+        )
+        return (excess_ret.mean() / r.std()) * np.sqrt(12)
+    else:
+        excess_ret = r - r_f
+        return (np.mean(excess_ret, axis=0) / np.std(r, axis=0, ddof=1)) * np.sqrt(12)
+
+
+def calculate_tracking_error(r, r_m):
+    """Calculates annualized Tracking Error."""
+    if isinstance(r, (pd.DataFrame, pd.Series)):
+        active_ret = r.sub(r_m, axis=0)
+        return active_ret.std() * np.sqrt(12)
+    else:
+        # Ensure r_m is broadcastable or same shape
+        if r_m.ndim == 1 and r.ndim == 2:
+            r_m = r_m[:, np.newaxis]
+        active_ret = r - r_m
+        return np.std(active_ret, axis=0, ddof=1) * np.sqrt(12)
+
+
+def calculate_information_ratio(r, r_m):
+    """Calculates annualized Information Ratio."""
+    if isinstance(r, (pd.DataFrame, pd.Series)):
+        active_ret = r.sub(r_m, axis=0)
+        te = active_ret.std()
+        return (active_ret.mean() / te) * np.sqrt(12)
+    else:
+        if r_m.ndim == 1 and r.ndim == 2:
+            r_m = r_m[:, np.newaxis]
+        active_ret = r - r_m
+        te = np.std(active_ret, axis=0, ddof=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            return (np.mean(active_ret, axis=0) / te) * np.sqrt(12)
+
+
+def block_bootstrap_metrics(
+    df_returns, df_market, block_size, n_sim, r_f=0.0, seed=None
+):
+    """
+    Performs block bootstrapping of returns and calculates performance metrics.
+
+    Args:
+        df_returns (pd.DataFrame): DataFrame containing strategy return columns.
+        df_market (pd.DataFrame or pd.Series): Market returns.
+        block_size (int): Size of the block in rows (months).
+        n_sim (int): Number of simulations.
+        r_f (float, pd.Series, pd.DataFrame): Risk-free rate.
+        seed (int): Random seed.
+
+    Returns:
+        dict: Dictionary of DataFrames for each metric (sharpe, volatility, information_ratio, tracking_error).
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_obs = len(df_returns)
+    if n_obs < block_size:
+        raise ValueError("Block size cannot be larger than the number of observations.")
+
+    # Number of blocks needed to cover the time series
+    n_blocks = int(np.ceil(n_obs / block_size))
+
+    cols = df_returns.columns
+
+    # Convert to numpy for speed
+    data_r = df_returns.values
+
+    # Handle market returns
+    if isinstance(df_market, pd.DataFrame):
+        data_m = df_market.values.flatten()
+    else:
+        data_m = df_market.values
+
+    # Handle risk-free rate
+    data_rf = r_f
+    is_rf_series = False
+    if isinstance(r_f, (pd.Series, pd.DataFrame)):
+        is_rf_series = True
+        if isinstance(r_f, pd.DataFrame):
+            data_rf = r_f.values.flatten()
+        else:
+            data_rf = r_f.values
+
+    results_sharpe = []
+    results_vol = []
+    results_ir = []
+    results_te = []
+
+    for _ in range(n_sim):
+        # Sample n_blocks starting indices (Moving Block Bootstrap)
+        start_indices = np.random.randint(0, n_obs - block_size + 1, size=n_blocks)
+
+        # Construct the bootstrap sample indices
+        bootstrap_indices = []
+        for start_idx in start_indices:
+            bootstrap_indices.extend(range(start_idx, start_idx + block_size))
+
+        # Trim to original length
+        bootstrap_indices = bootstrap_indices[:n_obs]
+
+        # Get the samples
+        sample_r = data_r[bootstrap_indices]
+        sample_m = data_m[bootstrap_indices]
+
+        if is_rf_series:
+            sample_rf = data_rf[bootstrap_indices]
+            # Reshape for broadcasting if needed
+            if sample_rf.ndim == 1:
+                sample_rf = sample_rf[:, np.newaxis]
+        else:
+            sample_rf = data_rf
+
+        # Calculate metrics
+        sharpes = calculate_sharpe_ratio(sample_r, sample_rf)
+        vols = calculate_annualized_volatility(sample_r)
+        tes = calculate_tracking_error(sample_r, sample_m)
+        irs = calculate_information_ratio(sample_r, sample_m)
+
+        results_sharpe.append(sharpes)
+        results_vol.append(vols)
+        results_te.append(tes)
+        results_ir.append(irs)
+
+    return {
+        "sharpe": pd.DataFrame(results_sharpe, columns=cols),
+        "volatility": pd.DataFrame(results_vol, columns=cols),
+        "tracking_error": pd.DataFrame(results_te, columns=cols),
+        "information_ratio": pd.DataFrame(results_ir, columns=cols),
+    }

@@ -1,4 +1,11 @@
-from .backtesting import calculate_strategy_returns
+from .backtesting import (
+    block_bootstrap_metrics,
+    calculate_annualized_volatility,
+    calculate_information_ratio,
+    calculate_sharpe_ratio,
+    calculate_strategy_returns,
+    calculate_tracking_error,
+)
 from .covariance import get_covariance_matrix, ledoit_wolf_shrinkage
 from .scoring import append_avg_score, yearly_score
 from .weighting import (
@@ -10,7 +17,12 @@ from .weighting import (
 )
 
 __all__ = [
+    "block_bootstrap_metrics",
+    "calculate_annualized_volatility",
+    "calculate_information_ratio",
+    "calculate_sharpe_ratio",
     "calculate_strategy_returns",
+    "calculate_tracking_error",
     "yearly_score",
     "append_avg_score",
     "ledoit_wolf_shrinkage",
