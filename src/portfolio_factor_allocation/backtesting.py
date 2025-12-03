@@ -254,3 +254,131 @@ def block_bootstrap_metrics(
         "tracking_error": pd.DataFrame(results_te, columns=cols),
         "information_ratio": pd.DataFrame(results_ir, columns=cols),
     }
+
+
+def calculate_sharpe_components(r):
+    """Calculates mean and second moment."""
+    mu = np.mean(r)
+    gamma = np.mean(r**2)
+    return mu, gamma
+
+
+def calculate_sharpe_gradient(mu_i, mu_n, gamma_i, gamma_n):
+    """Calculates the gradient of the difference in Sharpe ratios."""
+    a, b, c, d = mu_i, mu_n, gamma_i, gamma_n
+
+    # g1 = c / (c - a^2)**1.5
+    g1 = c / (c - a**2) ** 1.5
+
+    # g2 = d / (d - b^2)**1.5
+    g2 = d / (d - b**2) ** 1.5
+
+    # g3 = -0.5 * a / (c - a^2)**1.5
+    g3 = -0.5 * a / (c - a**2) ** 1.5
+
+    # g4 = -0.5 * b / (d - b^2)**1.5
+    g4 = -0.5 * b / (d - b**2) ** 1.5
+
+    return np.array([g1, g2, g3, g4])
+
+
+def calculate_psi(y, block_size):
+    """Calculates the long-run covariance matrix Psi via block-summation."""
+    T = y.shape[0]
+    l = T // block_size  # noqa: E741
+
+    f = np.zeros((l, 4))
+    for j in range(l):
+        # sum of y over rows j*b to (j+1)*b - 1
+        segment = y[j * block_size : (j + 1) * block_size]
+        f[j] = np.sum(segment, axis=0) / np.sqrt(block_size)
+
+    # Psi = (1/l) * sum(f_j * f_j.T)
+    Psi = (f.T @ f) / l
+    return Psi
+
+
+def bootstrap_studentized_sharpe_diff(r_i, r_n, block_size, n_sim, seed=None):
+    """
+    Performs block bootstrapping to compute the centered studentized statistic
+    for the difference in Sharpe ratios between two strategies.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    # Ensure inputs are numpy arrays
+    r_i = r_i.values if isinstance(r_i, pd.Series) else r_i
+    r_n = r_n.values if isinstance(r_n, pd.Series) else r_n
+
+    n_obs = len(r_i)
+    n_blocks = int(np.ceil(n_obs / block_size))
+
+    # --- Original Statistics ---
+    mu_i, gamma_i = calculate_sharpe_components(r_i)
+    mu_n, gamma_n = calculate_sharpe_components(r_n)
+
+    sharpe_i = mu_i / np.sqrt(gamma_i - mu_i**2)
+    sharpe_n = mu_n / np.sqrt(gamma_n - mu_n**2)
+    delta_hat = sharpe_i - sharpe_n
+
+    # Construct y_t for original data
+    y = np.column_stack([r_i - mu_i, r_n - mu_n, r_i**2 - gamma_i, r_n**2 - gamma_n])
+
+    # Compute Psi and Gradient
+    psi = calculate_psi(y, block_size)
+    grad = calculate_sharpe_gradient(mu_i, mu_n, gamma_i, gamma_n)
+
+    # Standard Error
+    se_hat = np.sqrt(grad.T @ psi @ grad / n_obs)
+
+    # d_original = np.abs(delta_hat) / se_hat # Not returned, but calculated in spirit
+
+    # --- Bootstrap ---
+    d_tilde_stars = []
+
+    for _ in range(n_sim):
+        # Sample n_blocks starting indices (Moving Block Bootstrap)
+        start_indices = np.random.randint(0, n_obs - block_size + 1, size=n_blocks)
+
+        # Construct the bootstrap sample indices
+        bootstrap_indices = []
+        for start_idx in start_indices:
+            bootstrap_indices.extend(range(start_idx, start_idx + block_size))
+
+        # Trim to original length
+        bootstrap_indices = bootstrap_indices[:n_obs]
+
+        # Get the samples
+        r_i_star = r_i[bootstrap_indices]
+        r_n_star = r_n[bootstrap_indices]
+
+        # Bootstrap stats
+        mu_i_s, gamma_i_s = calculate_sharpe_components(r_i_star)
+        mu_n_s, gamma_n_s = calculate_sharpe_components(r_n_star)
+
+        sharpe_i_s = mu_i_s / np.sqrt(gamma_i_s - mu_i_s**2)
+        sharpe_n_s = mu_n_s / np.sqrt(gamma_n_s - mu_n_s**2)
+        delta_star = sharpe_i_s - sharpe_n_s
+
+        # Construct y_t for bootstrap data
+        y_star = np.column_stack(
+            [
+                r_i_star - mu_i_s,
+                r_n_star - mu_n_s,
+                r_i_star**2 - gamma_i_s,
+                r_n_star**2 - gamma_n_s,
+            ]
+        )
+
+        # Compute Psi and Gradient for bootstrap data
+        psi_star = calculate_psi(y_star, block_size)
+        grad_star = calculate_sharpe_gradient(mu_i_s, mu_n_s, gamma_i_s, gamma_n_s)
+
+        # Bootstrap Standard Error
+        se_star = np.sqrt(grad_star.T @ psi_star @ grad_star / n_obs)
+
+        # Centered studentized statistic
+        d_tilde_star = np.abs(delta_star - delta_hat) / se_star
+        d_tilde_stars.append(d_tilde_star)
+
+    return d_tilde_stars
