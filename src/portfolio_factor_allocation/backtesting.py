@@ -126,7 +126,7 @@ def calculate_sharpe_ratio(r, r_f=0.0):
             if isinstance(r_f, (pd.DataFrame, pd.Series))
             else r - r_f
         )
-        return (excess_ret.mean() / r.std()) * np.sqrt(12)
+        return (excess_ret.mean() / excess_ret.std()) * np.sqrt(12)
     else:
         excess_ret = r - r_f
         return (np.mean(excess_ret, axis=0) / np.std(r, axis=0, ddof=1)) * np.sqrt(12)
