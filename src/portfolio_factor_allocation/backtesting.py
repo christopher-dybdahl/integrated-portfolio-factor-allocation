@@ -382,3 +382,38 @@ def bootstrap_studentized_sharpe_diff(r_i, r_n, block_size, n_sim, seed=None):
         d_tilde_stars.append(d_tilde_star)
 
     return d_tilde_stars
+
+
+def calculate_studentized_sharpe_diff_stat(r_i, r_n, block_size):
+    """
+    Calculates the observed studentized difference in Sharpe ratios (Int - Mix).
+    Returns the t-statistic: (Sharpe_Int - Sharpe_Mix) / SE.
+    """
+    # Ensure inputs are numpy arrays
+    r_i = r_i.values if isinstance(r_i, pd.Series) else r_i
+    r_n = r_n.values if isinstance(r_n, pd.Series) else r_n
+
+    n_obs = len(r_i)
+
+    # --- Original Statistics ---
+    mu_i, gamma_i = calculate_sharpe_components(r_i)
+    mu_n, gamma_n = calculate_sharpe_components(r_n)
+
+    sharpe_i = mu_i / np.sqrt(gamma_i - mu_i**2)
+    sharpe_n = mu_n / np.sqrt(gamma_n - mu_n**2)
+    delta_hat = sharpe_i - sharpe_n
+
+    # Construct y_t for original data
+    y = np.column_stack([r_i - mu_i, r_n - mu_n, r_i**2 - gamma_i, r_n**2 - gamma_n])
+
+    # Compute Psi and Gradient
+    psi = calculate_psi(y, block_size)
+    grad = calculate_sharpe_gradient(mu_i, mu_n, gamma_i, gamma_n)
+
+    # Standard Error
+    se_hat = np.sqrt(grad.T @ psi @ grad / n_obs)
+
+    if se_hat == 0:
+        return 0.0
+
+    return delta_hat / se_hat

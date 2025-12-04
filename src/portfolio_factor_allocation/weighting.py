@@ -83,9 +83,7 @@ def bw_portfolio_weights(
         raise KeyError(f"{date_col} not in DataFrame")
 
     df = df.copy()
-
-    years = df[date_col]
-
+    unique_dates = df[date_col].unique()
     df_weights = df[[date_col]].copy()
 
     for c in cols:
@@ -93,38 +91,61 @@ def bw_portfolio_weights(
         if score_col not in df.columns:
             raise KeyError(f"{score_col} not in DataFrame")
 
-        # Helper to calculate buckets safely
-        def _get_buckets(x):
-            try:
-                return pd.qcut(x, n_subportfolios, labels=False, duplicates="drop")
-            except ValueError:
-                return pd.Series(np.nan, index=x.index)
+        # Initialize weights column
+        df_weights[f"weight_{score_col}"] = 0.0
 
-        # Create temporary bucket column
-        bucket_col = f"_temp_bucket_{c}"
-        df[bucket_col] = df.groupby(years)[score_col].transform(_get_buckets)
+        for date in unique_dates:
+            # Get data for this date
+            mask = df[date_col] == date
+            df_date = df.loc[mask].copy()
 
-        # Calculate total market cap per bucket per year
-        bucket_caps = df.groupby([years, bucket_col])[mkt_cap_col].transform("sum")
+            # Filter valid data
+            valid_mask = df_date[score_col].notna() & df_date[mkt_cap_col].notna()
+            df_valid = df_date.loc[valid_mask]
 
-        # Calculate number of buckets per year to ensure equal size partition
-        max_bucket = df.groupby(years)[bucket_col].transform("max")
-        n_buckets = max_bucket + 1
+            if df_valid.empty:
+                continue
 
-        # Base weights (equal size buckets)
-        base_weights = (df[mkt_cap_col] / bucket_caps) * (1.0 / n_buckets)
+            # Sort by score descending
+            df_valid = df_valid.sort_values(score_col, ascending=False)
 
-        # Multipliers
-        # high_multiplier for max_bucket, decreasing by increment
-        multipliers = high_multiplier - (max_bucket - df[bucket_col]) * increment
+            # Calculate benchmark weights (market cap weights)
+            mcap = df_valid[mkt_cap_col]
+            total_mcap = mcap.sum()
+            if total_mcap == 0:
+                continue
+            w_bench = mcap / total_mcap
 
-        # Final weights
-        df_weights[f"weight_{score_col}"] = (
-            base_weights * (multipliers**multiple_power)
-        ).fillna(0.0)
+            # Cumulative market cap share
+            cum_w = w_bench.cumsum()
 
-        # Cleanup
-        df.drop(columns=[bucket_col], inplace=True)
+            # Assign buckets
+            # Top scores (start of list) -> High bucket index (n-1)
+            # cum_w goes 0 -> 1
+            # bucket = n - ceil(cum_w * n)
+            bucket_indices = n_subportfolios - np.ceil(cum_w * n_subportfolios).astype(
+                int
+            )
+            # Clip to [0, n-1]
+            bucket_indices = bucket_indices.clip(lower=0, upper=n_subportfolios - 1)
+
+            # Calculate multipliers
+            # Highest bucket (n-1) gets high_multiplier
+            # Lowest bucket (0) gets high_multiplier - (n-1)*increment
+            max_bucket = n_subportfolios - 1
+            multipliers = high_multiplier - (max_bucket - bucket_indices) * increment
+
+            # Apply power
+            multipliers = multipliers**multiple_power
+
+            # Calculate unnormalized weights
+            w_unnorm = w_bench * multipliers
+
+            # Normalize
+            w_final = w_unnorm / w_unnorm.sum()
+
+            # Assign back
+            df_weights.loc[df_valid.index, f"weight_{score_col}"] = w_final
 
     return df_weights
 
