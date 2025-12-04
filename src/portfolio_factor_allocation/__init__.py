@@ -7,6 +7,7 @@ from .backtesting import (
     calculate_tracking_error,
 )
 from .covariance import get_covariance_matrix, ledoit_wolf_shrinkage
+from .plotting import plot_sharpe_comparison, plot_sr_diff_and_pvalues
 from .scoring import append_avg_score, yearly_score
 from .weighting import (
     bw_portfolio_weights,
@@ -32,4 +33,6 @@ __all__ = [
     "bw_portfolio_weights",
     "factor_adjusted_weights",
     "te_portfolio_weights",
+    "plot_sharpe_comparison",
+    "plot_sr_diff_and_pvalues",
 ]
