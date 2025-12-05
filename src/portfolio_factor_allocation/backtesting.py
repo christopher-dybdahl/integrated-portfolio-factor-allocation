@@ -378,7 +378,7 @@ def bootstrap_studentized_sharpe_diff(r_i, r_n, block_size, n_sim, seed=None):
         se_star = np.sqrt(grad_star.T @ psi_star @ grad_star / n_obs)
 
         # Centered studentized statistic
-        d_tilde_star = np.abs(delta_star - delta_hat) / se_star
+        d_tilde_star = (delta_star - delta_hat) / se_star
         d_tilde_stars.append(d_tilde_star)
 
     return d_tilde_stars

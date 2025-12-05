@@ -1,3 +1,13 @@
 .vscode/settings.json
 *.csv
 __pycache__/
+!firms_by_year.csv
+!monthly_returns.csv
+!monthly_rf.csv
+!factors.csv
+!sharpe_summary.csv
+!ir_summary.csv
+!te_summary.csv
+!vol_summary.csv
+!p_values_adj.csv
+!p_values_raw.csv
