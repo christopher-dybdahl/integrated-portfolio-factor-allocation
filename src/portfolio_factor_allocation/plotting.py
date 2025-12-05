@@ -84,16 +84,16 @@ def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios):
         ax.set_xticklabels(labels, rotation=270)
 
         # Only add legend to the first plot to avoid clutter
-        if i == 0:
-            # Custom legend
-            from matplotlib.patches import Patch
+        # if i == 0:
+        #     # Custom legend
+        #     from matplotlib.patches import Patch
 
-            legend_elements = [
-                Patch(facecolor=color_int, label="Common Component"),
-                Patch(facecolor=color_pos_diff, label="Int Outperformance"),
-                Patch(facecolor=color_neg_diff, label="Mix Outperformance"),
-            ]
-            ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
+        #     legend_elements = [
+        #         Patch(facecolor=color_int, label="Common Component"),
+        #         Patch(facecolor=color_pos_diff, label="Int Outperformance"),
+        #         Patch(facecolor=color_neg_diff, label="Mix Outperformance"),
+        #     ]
+        #     ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
     plt.show()
