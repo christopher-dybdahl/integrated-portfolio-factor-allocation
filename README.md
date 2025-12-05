@@ -29,11 +29,31 @@ The project implements several portfolio construction techniques:
     *   Utilizes **Ledoit-Wolf Covariance Shrinkage** for robust risk estimation.
     *   Solves the resulting Quadratically Constrained Quadratic Program (QCQP) using `cvxpy`.
 
+## Analysis Workflow
+
+The project performs two parallel analyses to ensure robust comparisons between Integrated and Mixed approaches:
+
+1.  **Standard Construction**: 
+    *   Compares Integrated and Mixed portfolios constructed with identical constraints (e.g., both Top-Decile).
+    *   **Weight Generation**: Run `notebooks/portfolio_weights.ipynb`.
+
+2.  **Active Risk Adjusted**: 
+    *   Adjusts the Mixed portfolio to target the same ex-ante Tracking Error as the Integrated portfolio. This ensures that performance differences are due to the integration efficacy rather than simple leverage or risk exposure differences.
+    *   **Weight Generation**: Run `notebooks/portfolio_active_weights.ipynb`.
+
+**Performance & Testing**:
+The analysis notebooks (`strategy_returns.ipynb` and `robust_hypothesis_testing.ipynb`) are designed to handle both workflows. You must specify which dataset to process (Standard or Active Risk) within the notebook configuration before running.
+
 ## Project Structure
 
 *   `data/`: Contains raw and processed financial data (returns, factors).
 *   `notebooks/`: Jupyter notebooks for data preprocessing, weight calculation, and analysis.
-    *   `portfolio_weights.ipynb`: Main notebook for generating portfolio weights using the defined strategies.
+    *   `data_preprocessing.ipynb`: Cleans raw data and calculates factor scores.
+    *   `vif.ipynb`: Checks for multicollinearity among factors.
+    *   `portfolio_weights.ipynb`: Generates weights for standard portfolio comparisons.
+    *   `portfolio_active_weights.ipynb`: Generates weights where Mixed portfolios are scaled to match the active risk of Integrated portfolios.
+    *   `strategy_returns.ipynb`: Computes performance metrics and plots returns.
+    *   `robust_hypothesis_testing.ipynb`: Performs statistical significance testing (Bootstrap, Romano-Wolf).
 *   `src/portfolio_factor_allocation/`: Python package containing the core logic.
     *   `scoring.py`: Functions for calculating Z-scores and Rank-scores.
     *   `covariance.py`: Implementation of Ledoit-Wolf shrinkage and covariance matrix estimation.
