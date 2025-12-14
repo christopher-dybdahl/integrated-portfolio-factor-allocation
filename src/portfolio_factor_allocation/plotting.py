@@ -284,3 +284,64 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_metric_diff(df_metric, portfolios, metric_name="Metric"):
+    """
+    Plots the difference in a given metric (Int - Mix) for different portfolios.
+
+    Args:
+        df_metric (pd.DataFrame): DataFrame containing the metric values.
+                                  Rows should include keys like f"_int_{port}" and f"_mix_{port}".
+                                  Columns are factors.
+        portfolios (list): List of portfolio names (e.g. ["ter", "dec", "bw"]).
+        metric_name (str): Name of the metric for labeling (e.g. "Volatility", "IR", "TE").
+    """
+    # Parameters
+    factors = df_metric.columns.tolist()
+    n_factors = len(factors)
+    n_portfolios = len(portfolios)
+
+    fig, ax1 = plt.subplots(figsize=(15, 6))
+    width = 0.2
+    x = np.arange(n_factors)
+
+    # Base colors (Grey) - same as in plot_sr_diff_and_pvalues
+    base_colors = {"dec": "#a9a9a9", "ter": "#d3d3d3", "bw": "#808080", "te": "#505050"}
+
+    # Plot Bars (Metric Diff)
+    for i, port in enumerate(portfolios):
+        # Offset x for grouped bars
+        offset = (i - n_portfolios / 2 + 0.5) * width
+
+        # Calculate diffs
+        diffs = []
+        port_key = port.lower()
+
+        for idx, factor in enumerate(factors):
+            try:
+                val_int = df_metric.loc[f"_int_{port_key}", factor]
+                val_mix = df_metric.loc[f"_mix_{port_key}", factor]
+                diffs.append(val_int - val_mix)
+            except KeyError:
+                diffs.append(0)
+
+        ax1.bar(
+            x + offset,
+            diffs,
+            width,
+            label=port.upper(),
+            color=base_colors.get(port_key, "gray"),
+        )
+
+    ax1.set_ylabel(f"{metric_name} diff int-mix")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(factors, rotation=90)
+    ax1.grid(axis="y", linestyle="-", alpha=0.3)
+    ax1.axhline(0, color="black", linewidth=0.8)
+
+    # Legend
+    ax1.legend(loc="upper left", bbox_to_anchor=(1.05, 1), borderaxespad=0.0)
+
+    plt.tight_layout()
+    plt.show()

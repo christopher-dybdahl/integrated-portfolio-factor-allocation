@@ -6,7 +6,7 @@ from .backtesting import (
     calculate_strategy_returns,
     calculate_tracking_error,
 )
-from .covariance import get_covariance_matrix, ledoit_wolf_shrinkage
+from .covariance import get_covariance_matrix
 from .plotting import plot_sharpe_comparison, plot_sr_diff_and_pvalues
 from .scoring import append_avg_score, yearly_score
 from .weighting import (
