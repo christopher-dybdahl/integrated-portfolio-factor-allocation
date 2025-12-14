@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 
-def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios):
+def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios, save_path=None):
     """
     Plots a comparison of Sharpe Ratios for Integrated vs Mixed strategies.
 
@@ -14,13 +14,15 @@ def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios):
         factor_combs (list): List of factor combinations to plot (e.g., ["V_W", "V_C"]).
         portfolios (list): List of portfolio types to compare (e.g., ["TER", "DEC", "BW"]).
                            Assumes suffixes are formatted as f"_int_{lower(portfolio)}" and f"_mix_{lower(portfolio)}".
+        save_path (str, optional): Path to save the figure. Defaults to None.
     """
+    plt.rcParams.update({"font.size": 16})
 
     n_portfolios = len(portfolios)
     n_factors = len(factor_combs)
 
     fig, axes = plt.subplots(
-        n_portfolios, 1, figsize=(15, 4 * n_portfolios), sharex=True
+        n_portfolios, 1, figsize=(16, 4 * n_portfolios), sharex=True
     )
     if n_portfolios == 1:
         axes = [axes]
@@ -46,7 +48,7 @@ def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios):
                 if suffix_int in df_sharpe.index and suffix_mix in df_sharpe.index:
                     sr_int.append(df_sharpe.loc[suffix_int, factor])
                     sr_mix.append(df_sharpe.loc[suffix_mix, factor])
-                    labels.append(factor)
+                    labels.append(factor.replace("_", ""))
 
         x = np.arange(len(labels))
         width = 0.6
@@ -96,10 +98,12 @@ def plot_sharpe_comparison(df_sharpe, factor_combs, portfolios):
         #     ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
     plt.show()
 
 
-def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
+def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios, save_path=None):
     """
     Plots the difference in Sharpe Ratios (Int - Mix) and the associated p-values.
 
@@ -111,16 +115,19 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
                                     Rows are portfolios (e.g. "TER", "DEC").
                                     Columns are factors.
         portfolios (list): List of portfolio names (e.g. ["ter", "dec", "bw"]).
+        save_path (str, optional): Path to save the figure. Defaults to None.
     """
+    plt.rcParams.update({"font.size": 16})
     # Transpose p-values to have factors as rows (x-axis) and portfolios as columns
     df_pval = df_p_values.T
 
     # Parameters
     factors = df_sharpe.columns.tolist()
+    clean_factors = [f.replace("_", "") for f in factors]
     n_factors = len(factors)
     n_portfolios = len(portfolios)
 
-    fig, ax1 = plt.subplots(figsize=(15, 6))
+    fig, ax1 = plt.subplots(figsize=(18, 6))
     width = 0.2
     x = np.arange(n_factors)
 
@@ -194,7 +201,7 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
 
     ax1.set_ylabel("SR diff int-mix (bars)")
     ax1.set_xticks(x)
-    ax1.set_xticklabels(factors, rotation=90)
+    ax1.set_xticklabels(clean_factors, rotation=90)
     ax1.grid(axis="y", linestyle="-", alpha=0.3)
     ax1.axhline(0, color="black", linewidth=0.8)
 
@@ -229,8 +236,8 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
         )
 
     # Add significance lines
-    ax2.axhline(0.05, color="black", linestyle="--", linewidth=1.5, label="5%-pval")
-    ax2.axhline(0.10, color="gray", linestyle=":", linewidth=1.5, label="10%-pval")
+    ax2.axhline(0.05, color="black", linestyle="--", linewidth=1.5, label="5%")
+    ax2.axhline(0.10, color="gray", linestyle=":", linewidth=1.5, label="10%")
 
     # Legend
     # Create custom handles for bars (Base colors)
@@ -269,8 +276,8 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
 
     # Add significance lines to legend
     sig_handles = [
-        Line2D([0], [0], color="black", linestyle="--", label="5%-pval"),
-        Line2D([0], [0], color="gray", linestyle=":", label="10%-pval"),
+        Line2D([0], [0], color="black", linestyle="--", label="5%"),
+        Line2D([0], [0], color="gray", linestyle=":", label="10%"),
     ]
 
     final_handles = bar_handles + marker_handles + sig_handles
@@ -283,10 +290,12 @@ def plot_sr_diff_and_pvalues(df_sharpe, df_p_values, portfolios):
     )
 
     plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
     plt.show()
 
 
-def plot_metric_diff(df_metric, portfolios, metric_name="Metric"):
+def plot_metric_diff(df_metric, portfolios, metric_name="Metric", save_path=None):
     """
     Plots the difference in a given metric (Int - Mix) for different portfolios.
 
@@ -296,13 +305,16 @@ def plot_metric_diff(df_metric, portfolios, metric_name="Metric"):
                                   Columns are factors.
         portfolios (list): List of portfolio names (e.g. ["ter", "dec", "bw"]).
         metric_name (str): Name of the metric for labeling (e.g. "Volatility", "IR", "TE").
+        save_path (str, optional): Path to save the figure. Defaults to None.
     """
+    plt.rcParams.update({"font.size": 16})
     # Parameters
     factors = df_metric.columns.tolist()
+    clean_factors = [f.replace("_", "") for f in factors]
     n_factors = len(factors)
     n_portfolios = len(portfolios)
 
-    fig, ax1 = plt.subplots(figsize=(15, 6))
+    fig, ax1 = plt.subplots(figsize=(16, 6))
     width = 0.2
     x = np.arange(n_factors)
 
@@ -336,7 +348,7 @@ def plot_metric_diff(df_metric, portfolios, metric_name="Metric"):
 
     ax1.set_ylabel(f"{metric_name} diff int-mix")
     ax1.set_xticks(x)
-    ax1.set_xticklabels(factors, rotation=90)
+    ax1.set_xticklabels(clean_factors, rotation=90)
     ax1.grid(axis="y", linestyle="-", alpha=0.3)
     ax1.axhline(0, color="black", linewidth=0.8)
 
@@ -344,4 +356,6 @@ def plot_metric_diff(df_metric, portfolios, metric_name="Metric"):
     ax1.legend(loc="upper left", bbox_to_anchor=(1.05, 1), borderaxespad=0.0)
 
     plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight")
     plt.show()
