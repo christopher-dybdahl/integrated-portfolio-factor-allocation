@@ -4,11 +4,11 @@ This project implements and analyzes various multi-factor portfolio construction
 
 The codebase constructs portfolios under different weighting schemes and constraints, replicating and extending Leippold & Rüegg (2018) on CRSP/Compustat data from 1963 to 2024 (about 980,000 firm-months). Project report:
 [Mixed versus Integrated Approach to Style Investing (PDF)](https://christopher-dybdahl.github.io/assets/pdfs/factor_allocation_strategy.pdf)
-— Portfolio Management, Imperial College London, with J. Fhima and C. Mnif.
+(Portfolio Management, Imperial College London, with J. Fhima and C. Mnif).
 
 ## Headline result
 
-Across 26 factor combinations and all construction rules, integrated portfolios tend to earn higher Sharpe ratios than mixed portfolios pointwise — but the differences are **not statistically distinguishable once multiple testing is accounted for**. Sharpe differences are tested with the Ledoit–Wolf studentised circular block bootstrap and corrected across the full comparison family with the Romano–Wolf stepdown procedure; no comparison survives at conventional levels (adjusted p-values in `data/summary/p_values_adj.csv`), including after equalising active risk. The practical message: the integrated-versus-mixed debate is, statistically, much closer to a tie than single-comparison p-values suggest.
+Across 26 factor combinations and all construction rules, integrated portfolios tend to earn higher Sharpe ratios than mixed portfolios pointwise, but the differences are **not statistically distinguishable once multiple testing is accounted for**. Sharpe differences are tested with the Ledoit–Wolf studentised circular block bootstrap and corrected across the full comparison family with the Romano–Wolf stepdown procedure; no comparison survives at conventional levels (adjusted p-values in `data/summary/p_values_adj.csv`), including after equalising active risk. The practical message: the integrated-versus-mixed debate is, statistically, much closer to a tie than single-comparison p-values suggest.
 
 ## Factors
 
@@ -85,7 +85,7 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
 ## Data Setup
 
 The firm-level CRSP/Compustat inputs are licensed via WRDS and are **not
-included in this repository** — see `data/README.md` for the exact
+included in this repository**; see `data/README.md` for the exact
 specifications needed to pull them. The aggregated results in
 `data/summary/` and `data/active_summary/` are committed, so figures and
 tables can be regenerated without WRDS access.
