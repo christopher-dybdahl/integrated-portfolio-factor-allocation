@@ -2,9 +2,7 @@
 *.csv
 __pycache__/
 !firms_by_year.csv
-!monthly_returns.csv
 !monthly_rf.csv
-!factors.csv
 !sharpe_summary.csv
 !ir_summary.csv
 !te_summary.csv
